@@ -2,10 +2,14 @@
 """
 
 import os
+import random
 import requests
 from dateutil.parser import isoparse
 from github_release import get_releases
 from pathlib import Path
+from shutil import rmtree as shutil_rmtree
+from shutil import move as shutil_move
+from subprocess import Popen
 from typing import Dict
 
 save_dir = Path(f"{os.getenv('LOCALAPPDATA')}/mc_mod/cache/github")
@@ -95,9 +99,40 @@ def _releases(repo: str, info: Dict) -> Path:
 		raise RuntimeError(f"Could not locate a valid binary for {info}")
 
 def _compile(repo: str, info: Dict) -> Path:
-	return Path.cwd() / "test.jar"
+	clone_dir = save_dir / (repo.replace("/", "") + f"-{random.randint(0, 99999999)}")
+	os.system(f"git clone https://github.com/{repo} {clone_dir}")
 
-def _sanitize_url(url: str) -> str:
-	if url.startswith("https://") or url.startswith("http://"):
-		return url
-	return "https://" + url
+	p = Popen(["git", "checkout", info["branch"]], cwd=str(clone_dir), shell=True)
+	p.wait()
+
+	p = Popen(info["command"], cwd=str(clone_dir), shell=True)
+	p.wait()
+
+	jar_dir: Path = clone_dir / info["dir"]
+
+	for jar in jar_dir.glob("*.jar"):
+			invalid = False
+			for s in info["must_contain"]:
+				if s not in jar.name:
+					invalid = True
+					break
+			if invalid:
+				continue
+
+			for s in info["must_not_contain"]:
+				if s in jar.name:
+					invalid = True
+					break
+			if invalid:
+				continue
+
+			out_file: Path = save_dir / jar.name
+
+			shutil_move(str(jar), str(out_file))
+
+			shutil_rmtree(str(clone_dir), ignore_errors=True)
+			return out_file
+
+	# Unfortunately, shutil_rmtree leaves behind some files in .git because of permission errors
+	shutil_rmtree(str(clone_dir), ignore_errors=True)
+	raise RuntimeError(f"Could not locate a binary for info: {info}")
