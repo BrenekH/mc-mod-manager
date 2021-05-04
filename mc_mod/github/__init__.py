@@ -8,8 +8,6 @@ from github_release import get_releases
 from pathlib import Path
 from typing import Dict
 
-latest_mc_version = "1.16.5"
-
 save_dir = Path(f"{os.getenv('LOCALAPPDATA')}/mc_mod/cache/github")
 
 save_dir.mkdir(parents=True, exist_ok=True)
