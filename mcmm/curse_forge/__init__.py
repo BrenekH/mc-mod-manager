@@ -6,62 +6,67 @@ import requests
 from typing import Tuple
 from pathlib import Path
 
-latest_mc_version = "1.16.5"
+from ..plugin import DownloadHandler, MCMMPlugin
 
-def download_mod(info) -> Path:
-	id = info["id"]
-	name = info["name"]
+@MCMMPlugin
+class CurseForgeModProvider:
+	latest_mc_version = "1.16.5"
 
-	r = requests.get(f"https://addons-ecs.forgesvc.net/api/v2/addon/{id}", headers={"User-Agent": "Mozilla/5.0"})
-	r.raise_for_status() # I'm not in love with throwing an error, but I guess this is more robust than checking status_code ourselves.
+	@DownloadHandler
+	def download_mod(self, info) -> Path:
+		id = info["id"]
+		name = info["name"]
 
-	json_obj = r.json()
+		r = requests.get(f"https://addons-ecs.forgesvc.net/api/v2/addon/{id}", headers={"User-Agent": "Mozilla/5.0"})
+		r.raise_for_status() # I'm not in love with throwing an error, but I guess this is more robust than checking status_code ourselves.
 
-	if info["check_file_name"] == None:
-		file_id, filename = _extract_file(json_obj["gameVersionLatestFiles"])
-	else:
-		file_id, filename = _extract_file_with_file_name_check(json_obj["gameVersionLatestFiles"], info["check_file_name"])
+		json_obj = r.json()
 
-	file_download_url = _gen_download_url(file_id, filename)
+		if info["check_file_name"] == None:
+			file_id, filename = self._extract_file(json_obj["gameVersionLatestFiles"])
+		else:
+			file_id, filename = self._extract_file_with_file_name_check(json_obj["gameVersionLatestFiles"], info["check_file_name"])
 
-	r = requests.get(file_download_url)
-	r.raise_for_status()
+		file_download_url = self._gen_download_url(file_id, filename)
 
-	out_file = Path(f"{os.getenv('LOCALAPPDATA')}/mcmm/cache/curse_forge/{name}.jar")
+		r = requests.get(file_download_url)
+		r.raise_for_status()
 
-	out_file.parent.mkdir(parents=True, exist_ok=True)
+		out_file = Path(f"{os.getenv('LOCALAPPDATA')}/mcmm/cache/curse_forge/{name}.jar")
 
-	with out_file.open("wb") as f:
-		f.write(r.content)
+		out_file.parent.mkdir(parents=True, exist_ok=True)
 
-	return out_file
+		with out_file.open("wb") as f:
+			f.write(r.content)
 
-def _extract_file(json_obj) -> Tuple[int, str]:
-	file_id = 0
-	filename = ""
-	for obj in json_obj:
-		if obj["gameVersion"] == latest_mc_version:
-			file_id = obj["projectFileId"]
-			filename = obj["projectFileName"]
-			break
-	else:
-		raise RuntimeError(f"No files for Minecraft {latest_mc_version} found!")
+		return out_file
 
-	return file_id, filename
+	def _extract_file(self, json_obj) -> Tuple[int, str]:
+		file_id = 0
+		filename = ""
+		for obj in json_obj:
+			if obj["gameVersion"] == self.latest_mc_version:
+				file_id = obj["projectFileId"]
+				filename = obj["projectFileName"]
+				break
+		else:
+			raise RuntimeError(f"No files for Minecraft {self.latest_mc_version} found!")
 
-def _extract_file_with_file_name_check(json_obj, search_file_name: str) -> Tuple[int, str]:
-	file_id = 0
-	filename = ""
-	for obj in json_obj:
-		if obj["gameVersion"] == latest_mc_version and search_file_name.lower() in obj["projectFileName"].lower():
-			file_id = obj["projectFileId"]
-			filename = obj["projectFileName"]
-			break
-	else:
-		raise RuntimeError(f"No files for Minecraft {latest_mc_version} found!")
+		return file_id, filename
 
-	return file_id, filename
+	def _extract_file_with_file_name_check(self, json_obj, search_file_name: str) -> Tuple[int, str]:
+		file_id = 0
+		filename = ""
+		for obj in json_obj:
+			if obj["gameVersion"] == self.latest_mc_version and search_file_name.lower() in obj["projectFileName"].lower():
+				file_id = obj["projectFileId"]
+				filename = obj["projectFileName"]
+				break
+		else:
+			raise RuntimeError(f"No files for Minecraft {self.latest_mc_version} found!")
 
-def _gen_download_url(id: int, filename: str) -> str:
-	str_id = str(id)
-	return f"https://edge.forgecdn.net/files/{str_id[:4]}/{str_id[4:]}/{filename}"
+		return file_id, filename
+
+	def _gen_download_url(self, id: int, filename: str) -> str:
+		str_id = str(id)
+		return f"https://edge.forgecdn.net/files/{str_id[:4]}/{str_id[4:]}/{filename}"

@@ -6,19 +6,18 @@ from types import ModuleType
 from typing import Dict, List
 
 # Own library imports
+from .curse_forge import CurseForgeModProvider
 from .dirs import gen_dot_minecraft
 from .dirs import gen_config_dir
 from .dirs import gen_profile_jars_dir
+from .github import GitHubModProvider
 from .optifine import OptifineModProvider
-
-from . import curse_forge
-from . import github
 
 dot_minecraft = gen_dot_minecraft()
 config_dir = gen_config_dir()
 profile_jars_dir = gen_profile_jars_dir()
 
-mod_providers: Dict[str, ModuleType] = {"curse_forge": curse_forge, "optifine": OptifineModProvider(), "github": github}
+mod_providers: Dict[str, ModuleType] = {"curse_forge": CurseForgeModProvider(), "optifine": OptifineModProvider(), "github": GitHubModProvider()}
 
 def _activate_dispatcher(args: List[str]) -> None:
 	"""Parses out the command line arguments and calls switch.

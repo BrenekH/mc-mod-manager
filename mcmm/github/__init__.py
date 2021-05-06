@@ -12,127 +12,132 @@ from shutil import move as shutil_move
 from subprocess import Popen
 from typing import Dict
 
+from ..plugin import DownloadHandler, MCMMPlugin
+
 save_dir = Path(f"{os.getenv('LOCALAPPDATA')}/mcmm/cache/github")
 
 save_dir.mkdir(parents=True, exist_ok=True)
 
-def download_mod(info: Dict) -> Path:
-	repo = info["repo"]
+@MCMMPlugin
+class GitHubModProvider:
+	@DownloadHandler
+	def download_mod(self, info: Dict) -> Path:
+		repo = info["repo"]
 
-	if info["releases"] != None:
-		return _releases(repo, info["releases"])
-	elif info["compile"] != None:
-		return _compile(repo, info["compile"])
-	else:
-		raise RuntimeError("'releases' or 'compile' must be defined")
+		if info["releases"] != None:
+			return self._releases(repo, info["releases"])
+		elif info["compile"] != None:
+			return self._compile(repo, info["compile"])
+		else:
+			raise RuntimeError("'releases' or 'compile' must be defined")
 
-def _releases(repo: str, info: Dict) -> Path:
-	if info["latest"]:
-		r = requests.get(f"https://api.github.com/repos/{repo}/releases/latest")
-		r.raise_for_status()
-
-		latest_release = r.json()
-
-		for asset in latest_release["assets"]:
-			invalid = False
-			for s in info["must_contain"]:
-				if s not in asset["name"]:
-					invalid = True
-					break
-			if invalid:
-				continue
-
-			for s in info["must_not_contain"]:
-				if s in asset["name"]:
-					invalid = True
-					break
-			if invalid:
-				continue
-
-			r = requests.get(asset["browser_download_url"])
+	def _releases(self, repo: str, info: Dict) -> Path:
+		if info["latest"]:
+			r = requests.get(f"https://api.github.com/repos/{repo}/releases/latest")
 			r.raise_for_status()
 
-			out_file: Path = save_dir / asset["name"]
+			latest_release = r.json()
 
-			with out_file.open("wb") as f:
-				f.write(r.content)
+			for asset in latest_release["assets"]:
+				invalid = False
+				for s in info["must_contain"]:
+					if s not in asset["name"]:
+						invalid = True
+						break
+				if invalid:
+					continue
 
-			return out_file
+				for s in info["must_not_contain"]:
+					if s in asset["name"]:
+						invalid = True
+						break
+				if invalid:
+					continue
 
-		raise RuntimeError(f"Could not locate a valid binary for {info}")
+				r = requests.get(asset["browser_download_url"])
+				r.raise_for_status()
 
-	else: # We have to evaluate all tags against info["tag"]
-		matching_releases = [release for release in get_releases(repo) if info["tag"] in release["tag_name"]]
+				out_file: Path = save_dir / asset["name"]
 
-		times = [isoparse(r["published_at"]) for r in matching_releases]
+				with out_file.open("wb") as f:
+					f.write(r.content)
 
-		most_recent_release_time = max(times)
+				return out_file
 
-		most_recent_release = [r for r in matching_releases if isoparse(r["published_at"]) == most_recent_release_time][0]
+			raise RuntimeError(f"Could not locate a valid binary for {info}")
 
-		for asset in most_recent_release["assets"]:
-			invalid = False
-			for s in info["must_contain"]:
-				if s not in asset["name"]:
-					invalid = True
-					break
-			if invalid:
-				continue
+		else: # We have to evaluate all tags against info["tag"]
+			matching_releases = [release for release in get_releases(repo) if info["tag"] in release["tag_name"]]
 
-			for s in info["must_not_contain"]:
-				if s in asset["name"]:
-					invalid = True
-					break
-			if invalid:
-				continue
+			times = [isoparse(r["published_at"]) for r in matching_releases]
 
-			r = requests.get(asset["browser_download_url"])
-			r.raise_for_status()
+			most_recent_release_time = max(times)
 
-			out_file: Path = save_dir / asset["name"]
+			most_recent_release = [r for r in matching_releases if isoparse(r["published_at"]) == most_recent_release_time][0]
 
-			with out_file.open("wb") as f:
-				f.write(r.content)
+			for asset in most_recent_release["assets"]:
+				invalid = False
+				for s in info["must_contain"]:
+					if s not in asset["name"]:
+						invalid = True
+						break
+				if invalid:
+					continue
 
-			return out_file
+				for s in info["must_not_contain"]:
+					if s in asset["name"]:
+						invalid = True
+						break
+				if invalid:
+					continue
 
-		raise RuntimeError(f"Could not locate a valid binary for {info}")
+				r = requests.get(asset["browser_download_url"])
+				r.raise_for_status()
 
-def _compile(repo: str, info: Dict) -> Path:
-	clone_dir = save_dir / (repo.replace("/", "") + f"-{random.randint(0, 99999999)}")
-	os.system(f"git clone https://github.com/{repo} {clone_dir}")
+				out_file: Path = save_dir / asset["name"]
 
-	p = Popen(["git", "checkout", info["branch"]], cwd=str(clone_dir), shell=True)
-	p.wait()
+				with out_file.open("wb") as f:
+					f.write(r.content)
 
-	p = Popen(info["command"], cwd=str(clone_dir), shell=True)
-	p.wait()
+				return out_file
 
-	jar_dir: Path = clone_dir / info["dir"]
+			raise RuntimeError(f"Could not locate a valid binary for {info}")
 
-	for jar in jar_dir.glob("*.jar"):
-			invalid = False
-			for s in info["must_contain"]:
-				if s not in jar.name:
-					invalid = True
-					break
-			if invalid:
-				continue
+	def _compile(self, repo: str, info: Dict) -> Path:
+		clone_dir = save_dir / (repo.replace("/", "") + f"-{random.randint(0, 99999999)}")
+		os.system(f"git clone https://github.com/{repo} {clone_dir}")
 
-			for s in info["must_not_contain"]:
-				if s in jar.name:
-					invalid = True
-					break
-			if invalid:
-				continue
+		p = Popen(["git", "checkout", info["branch"]], cwd=str(clone_dir), shell=True)
+		p.wait()
 
-			out_file: Path = save_dir / jar.name
+		p = Popen(info["command"], cwd=str(clone_dir), shell=True)
+		p.wait()
 
-			shutil_move(str(jar), str(out_file))
+		jar_dir: Path = clone_dir / info["dir"]
 
-			shutil_rmtree(str(clone_dir), ignore_errors=True)
-			return out_file
+		for jar in jar_dir.glob("*.jar"):
+				invalid = False
+				for s in info["must_contain"]:
+					if s not in jar.name:
+						invalid = True
+						break
+				if invalid:
+					continue
 
-	# Unfortunately, shutil_rmtree leaves behind some files in .git because of permission errors
-	shutil_rmtree(str(clone_dir), ignore_errors=True)
-	raise RuntimeError(f"Could not locate a binary for info: {info}")
+				for s in info["must_not_contain"]:
+					if s in jar.name:
+						invalid = True
+						break
+				if invalid:
+					continue
+
+				out_file: Path = save_dir / jar.name
+
+				shutil_move(str(jar), str(out_file))
+
+				shutil_rmtree(str(clone_dir), ignore_errors=True)
+				return out_file
+
+		# Unfortunately, shutil_rmtree leaves behind some files in .git because of permission errors
+		shutil_rmtree(str(clone_dir), ignore_errors=True)
+		raise RuntimeError(f"Could not locate a binary for info: {info}")
