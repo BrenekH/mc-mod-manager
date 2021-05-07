@@ -6,6 +6,11 @@ class PluginBase(ABC):
 	def id(self):
 		pass
 
+	@property
+	@abstractmethod
+	def help_string(self):
+		pass
+
 def MCMMPlugin(plugin_class):
 	plugin_class._is_mcmm_plugin = True
 	return plugin_class
@@ -17,4 +22,5 @@ def DownloadHandler(func):
 
 class HandlerType:
 	download = "download"
-	info = "info"
+
+	_all_types = ["download"]

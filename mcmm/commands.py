@@ -12,6 +12,7 @@ from .dirs import gen_config_dir
 from .dirs import gen_jar_storage_dir
 from .github import GitHubModProvider
 from .optifine import OptifineModProvider
+from .plugin_internal import ProviderRunner
 
 dot_minecraft = gen_dot_minecraft()
 config_dir = gen_config_dir()
@@ -40,15 +41,15 @@ def activate(profile: str) -> None:
 	for file in (jar_storage_dir / profile).glob("*"):
 		shutil_copy(str(file), str(dot_minecraft / "mods" / file.name))
 
-def _download_dispatcher(args: List[str]) -> None:
+def _download_dispatcher(args: List[str], provider_runner: ProviderRunner) -> None:
 	"""Parses out the command line arguments and calls update.
 
 	Args:
 		args (List[str]): Arguments to parse.
 	"""
-	return download(args[0])
+	return download(args[0], provider_runner)
 
-def download(profile: str) -> None:
+def download(profile: str, provider_runner: ProviderRunner) -> None:
 	# Load profile json
 	with (config_dir / f"profiles/{profile}.json").open("r") as f:
 		profile_obj = load(f)
@@ -61,7 +62,10 @@ def download(profile: str) -> None:
 	# Download up-to-date jars
 	for mod in profile_obj["mods"]:
 		try:
-			file_location: Path = mod_providers[mod["type"]].download_mod(mod["info"])
+			file_location, err_str = provider_runner.download(mod["type"], mod["info"])
+			if err_str != "":
+				errs[str(mod)] = err_str
+				continue
 		except Exception as e:
 			errs[str(mod)] = e
 			continue
