@@ -6,9 +6,9 @@ import requests
 from bs4 import BeautifulSoup as BS
 from pathlib import Path
 from requests.models import HTTPError
-from typing import Tuple
+from typing import Dict, Tuple
 
-from ..plugin import DownloadHandler, MCMMPlugin, PluginBase
+from ..plugin import DownloadHandler, GenerationHandler, MCMMPlugin, PluginBase
 
 @MCMMPlugin
 class OptifineModProvider(PluginBase):
@@ -59,3 +59,7 @@ class OptifineModProvider(PluginBase):
 
 	def _check_bs4_tag(self, tag: BS) -> bool:
 		return tag.has_attr("href") and self.latest_mc_version in tag.attrs["href"] and not "pre" in tag.attrs["href"]
+
+	@GenerationHandler
+	def generate(self) -> Tuple[Dict, str]:
+		return ({}, "")

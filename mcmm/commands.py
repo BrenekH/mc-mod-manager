@@ -1,4 +1,5 @@
 from json import dump, load
+from mcmm.plugin import HandlerType
 from shutil import copy as shutil_copy
 from shutil import move as shutil_move
 from typing import List
@@ -57,7 +58,7 @@ def download(profile: str, provider_runner: ProviderRunner) -> None:
 	# Download up-to-date jars
 	for mod in profile_obj["mods"]:
 		try:
-			file_location, err_str = provider_runner.download(mod["type"], mod["info"])
+			file_location, err_str = provider_runner.download(mod["id"], mod["metadata"])
 			if err_str != "":
 				errs[str(mod)] = err_str
 				continue
@@ -94,7 +95,24 @@ def generate(profile: str, provider_runner: ProviderRunner) -> None:
 	# TODO: Allow for setting custom dot_minecraft location
 	new_prof_obj = {"mods": []}
 
-	# TODO: Generate mods list from mod providers
+	while True:
+		print("\nAvailable Mod Providers:")
+		for mod_id in provider_runner._event_registry[HandlerType.generate]:
+			print(f"\t{mod_id}")
+
+		mod_prov_id = input("\nEnter a Mod Provider ID or 'finish' to finish: ")
+		if mod_prov_id == "finish":
+			break
+
+		if mod_prov_id not in provider_runner._event_registry[HandlerType.generate]:
+			print(f"'{mod_prov_id}' is not a valid Mod Provider ID.")
+
+		mod_prov_metadata, err_str = provider_runner.generate(mod_prov_id)
+
+		if err_str == "":
+			new_prof_obj["mods"].append({"id": mod_prov_id, "metadata": mod_prov_metadata})
+		else:
+			print(f"The selected mod provider errored with the following explanation: {err_str}")
 
 	with profile_json_file.open("w") as f:
 		dump(new_prof_obj, f, indent=4)

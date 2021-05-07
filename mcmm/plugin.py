@@ -20,7 +20,13 @@ def DownloadHandler(func):
 	func._mcmm_event = HandlerType.download
 	return func
 
+def GenerationHandler(func):
+	func._is_mcmm_handler = True
+	func._mcmm_event = HandlerType.generate
+	return func
+
 class HandlerType:
 	download = "download"
+	generate = "generate"
 
-	_all_types = ["download"]
+	_all_types = ["download", "generate"]

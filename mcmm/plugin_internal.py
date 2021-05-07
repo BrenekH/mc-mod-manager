@@ -2,7 +2,8 @@ import inspect
 from colorama import Fore
 from importlib import import_module
 from pathlib import Path
-from typing import Dict, List, Tuple
+from types import ModuleType
+from typing import Dict, List, Tuple, Union
 
 from .plugin import HandlerType
 
@@ -25,10 +26,24 @@ class ProviderRunner:
 		# Since the handler is supposed to be a method, we need to provide the class instance as the self parameter.
 		return handler(provider["instance"], metadata)
 
+	def generate(self, provider_id: str) -> Tuple[Dict, str]:
+		try:
+			provider = self._providers[provider_id]
+		except KeyError:
+			return ({}, f"[ERROR] Could not locate mod provider with id '{provider_id}'")
+
+		try:
+			handler = provider["generate"]
+		except KeyError:
+			return ({}, f"[ERROR] Mod provider '{provider_id}' does not provide a generation handler.")
+
+		# Since the handler is supposed to be a method, we need to provide the class instance as the self parameter.
+		return handler(provider["instance"])
+
 	def __str__(self) -> str:
 		return f"Providers: {self._providers}; Event Registry: {self._event_registry};"
 
-def load_providers(providers: List[str]) -> ProviderRunner:
+def load_providers(providers: List[Union[str, ModuleType]]) -> ProviderRunner:
 	"""Loads providers to be used by the MCMM plugin engine
 	
 	Arguments:
@@ -37,6 +52,10 @@ def load_providers(providers: List[str]) -> ProviderRunner:
 	
 	return_providers = {} # {"provider id": {"instance": provider_class, "misc metadata (listeners, configs, requirements, etc.)": "the data"}}
 	return_event_registry = {}
+
+	# Initialize event registry with empty lists to prevent KeyErrors elsewhere
+	for h_type in HandlerType._all_types:
+		return_event_registry[h_type] = []
 
 	for provider in providers:
 		# Import the provider's module if the parameter is not already a module
