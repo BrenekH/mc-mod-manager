@@ -157,5 +157,75 @@ class GitHubModProvider(PluginBase):
 
 	@GenerationHandler
 	def generate(self) -> Tuple[Dict, str]:
-		# TODO: Implement
-		return ({}, "Not Implemented")
+		repo = input("Repo name (ex. 'BrenekH/mc-mod-manager'): ")
+		while True:
+			npt = input("Input 'release' or 'compile': ")
+			if npt.lower() == "release":
+				latest = input("Use latest release (y/n): ") == "y"
+
+				tag = input("Target tag(empty for None): ")
+				if tag == "":
+					tag = None
+
+				must_contain = []
+				while True:
+					npt = input("Words that the file must contain (one per line, enter to continue): ")
+					if npt == "":
+						break
+					must_contain.append(npt)
+
+				must_not_contain = []
+				while True:
+					npt = input("Words that the file must not contain (one per line, enter to continue): ")
+					if npt == "":
+						break
+					must_not_contain.append(npt)
+
+				return ({
+					"repo": repo,
+					"compile": None,
+					"releases": {
+						"latest": latest,
+						"tag": tag,
+						"must_contain": must_contain,
+						"must_not_contain": must_not_contain,
+					}
+				}, "")
+			elif npt.lower() == "compile":
+				branch = input("Branch: ")
+				dir = input("Relative directory to find jars in: ")
+
+				command = []
+				while True:
+					npt = input("Command for building jar (one argument per line): ")
+					if npt == "":
+						break
+					command.append(npt)
+
+				must_contain = []
+				while True:
+					npt = input("Words that the file must contain (one per line, enter to continue): ")
+					if npt == "":
+						break
+					must_contain.append(npt)
+
+				must_not_contain = []
+				while True:
+					npt = input("Words that the file must not contain (one per line, enter to continue): ")
+					if npt == "":
+						break
+					must_not_contain.append(npt)
+
+				return ({
+					"repo": repo,
+					"releases": None,
+					"compile": {
+						"branch": branch,
+						"command": command,
+						"dir": dir,
+						"must_not_contain": must_not_contain,
+						"must_contain": must_contain,
+					},
+				}, "")
+			else:
+				pass
