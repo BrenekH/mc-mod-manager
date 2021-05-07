@@ -1,24 +1,17 @@
 from json import load
-from pathlib import Path
 from shutil import copy as shutil_copy
 from shutil import move as shutil_move
-from types import ModuleType
-from typing import Dict, List
+from typing import List
 
 # Own library imports
-from .curse_forge import CurseForgeModProvider
 from .dirs import gen_dot_minecraft
 from .dirs import gen_config_dir
 from .dirs import gen_jar_storage_dir
-from .github import GitHubModProvider
-from .optifine import OptifineModProvider
 from .plugin_internal import ProviderRunner
 
 dot_minecraft = gen_dot_minecraft()
 config_dir = gen_config_dir()
 jar_storage_dir = gen_jar_storage_dir()
-
-mod_providers: Dict[str, ModuleType] = {"curse_forge": CurseForgeModProvider(), "optifine": OptifineModProvider(), "github": GitHubModProvider()}
 
 def _activate_dispatcher(args: List[str]) -> None:
 	"""Parses out the command line arguments and calls switch.
@@ -54,10 +47,12 @@ def download(profile: str, provider_runner: ProviderRunner) -> None:
 	with (config_dir / f"profiles/{profile}.json").open("r") as f:
 		profile_obj = load(f)
 
+	print(f"Cleaning existing jars from jar storage of profile '{profile}'.")
 	# Clean jar storage before downloading new versions (which may have different names which cause the old jars to not be overwritten).
 	for file in (jar_storage_dir / profile).glob("*"):
 		file.unlink()
 
+	print(f"Downloading new jars for profile '{profile}'.")
 	errs = {}
 	# Download up-to-date jars
 	for mod in profile_obj["mods"]:

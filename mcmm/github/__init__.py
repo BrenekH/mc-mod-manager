@@ -41,7 +41,7 @@ class GitHubModProvider(PluginBase):
 			try:
 				r.raise_for_status()
 			except HTTPError as e:
-				return Path.cwd(), str(e)
+				return (Path.cwd(), str(e))
 
 			latest_release = r.json()
 
@@ -65,14 +65,14 @@ class GitHubModProvider(PluginBase):
 				try:
 					r.raise_for_status()
 				except HTTPError as e:
-					return Path.cwd(), str(e)
+					return (Path.cwd(), str(e))
 
 				out_file: Path = save_dir / asset["name"]
 
 				with out_file.open("wb") as f:
 					f.write(r.content)
 
-				return out_file
+				return (out_file, "")
 
 			return (Path.cwd(), f"Could not locate a valid binary for {info}")
 
@@ -105,14 +105,14 @@ class GitHubModProvider(PluginBase):
 				try:
 					r.raise_for_status()
 				except HTTPError as e:
-					return Path.cwd(), str(e)
+					return (Path.cwd(), str(e))
 
 				out_file: Path = save_dir / asset["name"]
 
 				with out_file.open("wb") as f:
 					f.write(r.content)
 
-				return out_file
+				return (out_file, "")
 
 			return (Path.cwd(), f"Could not locate a valid binary for {info}")
 
@@ -149,7 +149,7 @@ class GitHubModProvider(PluginBase):
 				shutil_move(str(jar), str(out_file))
 
 				shutil_rmtree(str(clone_dir), ignore_errors=True)
-				return out_file
+				return (out_file, "")
 
 		# Unfortunately, shutil_rmtree leaves behind some files in .git because of permission errors
 		shutil_rmtree(str(clone_dir), ignore_errors=True)

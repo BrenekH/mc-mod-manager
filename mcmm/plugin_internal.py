@@ -39,8 +39,11 @@ def load_providers(providers: List[str]) -> ProviderRunner:
 	return_event_registry = {}
 
 	for provider in providers:
-		# Import the provider's module
-		provider_module = import_module(provider)
+		# Import the provider's module if the parameter is not already a module
+		if inspect.ismodule(provider):
+			provider_module = provider
+		else:
+			provider_module = import_module(provider)
 		
 		# Find all classes in the provider's module
 		all_module_classes = [m[1] for m in inspect.getmembers(provider_module, inspect.isclass) if m[1].__module__ == provider_module.__name__]

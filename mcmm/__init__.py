@@ -1,5 +1,6 @@
 from sys import argv
 
+from . import curse_forge, github, optifine
 from .commands import _activate_dispatcher
 from .commands import _download_dispatcher
 from .plugin_internal import load_providers
@@ -15,5 +16,5 @@ def cli():
 		_activate_dispatcher(argv[2:])
 
 	elif command == "download":
-		mod_providers = load_providers(["mcmm.curse_forge", "mcmm.optifine", "mcmm.github"])
+		mod_providers = load_providers([curse_forge, optifine, github])
 		_download_dispatcher(argv[2:], mod_providers)
