@@ -5,9 +5,9 @@ import os
 import requests
 from pathlib import Path
 from requests.models import HTTPError
-from typing import Tuple
+from typing import Dict, Tuple
 
-from ..plugin import DownloadHandler, MCMMPlugin, PluginBase
+from ..plugin import DownloadHandler, GenerationHandler, MCMMPlugin, PluginBase
 
 @MCMMPlugin
 class CurseForgeModProvider(PluginBase):
@@ -84,3 +84,12 @@ class CurseForgeModProvider(PluginBase):
 	def _gen_download_url(self, id: int, filename: str) -> str:
 		str_id = str(id)
 		return f"https://edge.forgecdn.net/files/{str_id[:4]}/{str_id[4:]}/{filename}"
+
+	@GenerationHandler
+	def generate(self) -> Tuple[Dict, str]:
+		name = input("Name: ")
+		ID = input("ID: ")
+		check_file_name = input("Check file name (string that must be in the file name) leave blank for None: ")
+		if check_file_name == "":
+			check_file_name = None
+		return ({"name": name, "id": ID, "check_file_name": check_file_name}, "")
