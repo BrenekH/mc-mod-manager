@@ -9,13 +9,13 @@ from typing import Dict, List
 from .curse_forge import CurseForgeModProvider
 from .dirs import gen_dot_minecraft
 from .dirs import gen_config_dir
-from .dirs import gen_profile_jars_dir
+from .dirs import gen_jar_storage_dir
 from .github import GitHubModProvider
 from .optifine import OptifineModProvider
 
 dot_minecraft = gen_dot_minecraft()
 config_dir = gen_config_dir()
-profile_jars_dir = gen_profile_jars_dir()
+jar_storage_dir = gen_jar_storage_dir()
 
 mod_providers: Dict[str, ModuleType] = {"curse_forge": CurseForgeModProvider(), "optifine": OptifineModProvider(), "github": GitHubModProvider()}
 
@@ -28,7 +28,7 @@ def _activate_dispatcher(args: List[str]) -> None:
 	return activate(args[0])
 
 def activate(profile: str) -> None:
-	# Load profile from APPDATA/mcmm/profiles/{wanted_profile_name}.json
+	# Load profile json
 	if not (config_dir / f"profiles/{profile}.json").exists():
 		raise RuntimeError(f"Could not find a profile.json for '{profile}'")
 
@@ -36,8 +36,8 @@ def activate(profile: str) -> None:
 	for file in (dot_minecraft / "mods").glob("*.jar"):
 		file.unlink()
 
-	# Copy profile jars from LOCALAPPDATA to dot_minecraft/mods
-	for file in (profile_jars_dir / profile).glob("*"):
+	# Copy profile jars from jar_storage_dir to dot_minecraft/mods
+	for file in (jar_storage_dir / profile).glob("*"):
 		shutil_copy(str(file), str(dot_minecraft / "mods" / file.name))
 
 def _download_dispatcher(args: List[str]) -> None:
@@ -49,12 +49,12 @@ def _download_dispatcher(args: List[str]) -> None:
 	return download(args[0])
 
 def download(profile: str) -> None:
-	# Load profile from APPDATA/mcmm/profiles/{wanted_profile_name}.json
+	# Load profile json
 	with (config_dir / f"profiles/{profile}.json").open("r") as f:
 		profile_obj = load(f)
 
 	# Clean jar storage before downloading new versions (which may have different names which cause the old jars to not be overwritten).
-	for file in (profile_jars_dir / profile).glob("*"):
+	for file in (jar_storage_dir / profile).glob("*"):
 		file.unlink()
 
 	errs = {}
@@ -66,9 +66,9 @@ def download(profile: str) -> None:
 			errs[str(mod)] = e
 			continue
 
-		# Move jars to profile_jars_dir/profiles/{wanted_profile_name}/{mod_file_name}
-		(profile_jars_dir / profile).mkdir(parents=True, exist_ok=True)
-		shutil_move(str(file_location), str(profile_jars_dir / profile / file_location.name))
+		# Move jars to jar_storage_dir/profiles/{wanted_profile_name}/{mod_file_name}
+		(jar_storage_dir / profile).mkdir(parents=True, exist_ok=True)
+		shutil_move(str(file_location), str(jar_storage_dir / profile / file_location.name))
 
 	for err in errs:
 		print(f"Error: {errs[str(err)]}  on profile entry: {err}\n")
