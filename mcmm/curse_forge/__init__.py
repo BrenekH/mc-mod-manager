@@ -6,10 +6,12 @@ import requests
 from typing import Tuple
 from pathlib import Path
 
-from ..plugin import DownloadHandler, MCMMPlugin
+from ..plugin import DownloadHandler, MCMMPlugin, PluginBase
 
 @MCMMPlugin
-class CurseForgeModProvider:
+class CurseForgeModProvider(PluginBase):
+	id = "curse_forge"
+
 	latest_mc_version = "1.16.5"
 
 	@DownloadHandler

@@ -12,14 +12,16 @@ from shutil import move as shutil_move
 from subprocess import Popen
 from typing import Dict
 
-from ..plugin import DownloadHandler, MCMMPlugin
+from ..plugin import DownloadHandler, MCMMPlugin, PluginBase
 
 save_dir = Path(f"{os.getenv('LOCALAPPDATA')}/mcmm/cache/github")
 
 save_dir.mkdir(parents=True, exist_ok=True)
 
 @MCMMPlugin
-class GitHubModProvider:
+class GitHubModProvider(PluginBase):
+	id = "github"
+
 	@DownloadHandler
 	def download_mod(self, info: Dict) -> Path:
 		repo = info["repo"]

@@ -6,10 +6,12 @@ import requests
 from bs4 import BeautifulSoup as BS
 from pathlib import Path
 
-from ..plugin import DownloadHandler, MCMMPlugin
+from ..plugin import DownloadHandler, MCMMPlugin, PluginBase
 
 @MCMMPlugin
-class OptifineModProvider:
+class OptifineModProvider(PluginBase):
+	id = "optifine"
+
 	latest_mc_version = "1.16.5"
 
 	@DownloadHandler
