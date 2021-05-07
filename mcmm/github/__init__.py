@@ -13,7 +13,7 @@ from shutil import move as shutil_move
 from subprocess import Popen
 from typing import Dict, Tuple
 
-from ..plugin import DownloadHandler, MCMMPlugin, PluginBase
+from ..plugin import DownloadHandler, GenerationHandler, MCMMPlugin, PluginBase
 
 save_dir = Path(f"{os.getenv('LOCALAPPDATA')}/mcmm/cache/github")
 
@@ -154,3 +154,8 @@ class GitHubModProvider(PluginBase):
 		# Unfortunately, shutil_rmtree leaves behind some files in .git because of permission errors
 		shutil_rmtree(str(clone_dir), ignore_errors=True)
 		return (Path.cwd(), f"Could not locate a binary for info: {info}")
+
+	@GenerationHandler
+	def generate(self) -> Tuple[Dict, str]:
+		# TODO: Implement
+		return ({}, "Not Implemented")
