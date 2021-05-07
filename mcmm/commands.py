@@ -1,4 +1,4 @@
-from json import load
+from json import dump, load
 from shutil import copy as shutil_copy
 from shutil import move as shutil_move
 from typing import List
@@ -14,7 +14,7 @@ config_dir = gen_config_dir()
 jar_storage_dir = gen_jar_storage_dir()
 
 def _activate_dispatcher(args: List[str]) -> None:
-	"""Parses out the command line arguments and calls switch.
+	"""Parses out the command line arguments and calls activate.
 
 	Args:
 		args (List[str]): Arguments to parse.
@@ -35,7 +35,7 @@ def activate(profile: str) -> None:
 		shutil_copy(str(file), str(dot_minecraft / "mods" / file.name))
 
 def _download_dispatcher(args: List[str], provider_runner: ProviderRunner) -> None:
-	"""Parses out the command line arguments and calls update.
+	"""Parses out the command line arguments and calls download.
 
 	Args:
 		args (List[str]): Arguments to parse.
@@ -73,3 +73,30 @@ def download(profile: str, provider_runner: ProviderRunner) -> None:
 		print(f"Error: {errs[str(err)]}  on profile entry: {err}\n")
 
 	print(f"Downloaded profile '{profile}'. If you are currently using this profile and wish to take advantage of the newly downloaded mods, use the activate command.")
+
+def _generate_dispatcher(args: List[str], provider_runner: ProviderRunner) -> None:
+	"""Parses out the command line arguments and calls generate.
+
+	Args:
+		args (List[str]): Arguments to parse.
+	"""
+	return generate(args[0], provider_runner)
+
+def generate(profile: str, provider_runner: ProviderRunner) -> None:
+	profile_json_file = config_dir / f"profiles/{profile}.json"
+
+	if profile_json_file.exists():
+		overwrite = input(f"Profile '{profile}' already exists. Do you want to overwrite it? (y/n) ")
+		if overwrite.lower() != "y":
+			print("Quitting...")
+			return
+
+	# TODO: Allow for setting custom dot_minecraft location
+	new_prof_obj = {"mods": []}
+
+	# TODO: Generate mods list from mod providers
+
+	with profile_json_file.open("w") as f:
+		dump(new_prof_obj, f, indent=4)
+
+	print(f"Profile '{profile}' successfully generated.")
