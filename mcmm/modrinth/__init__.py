@@ -83,5 +83,28 @@ class ModrinthModProvider(PluginBase):
 
 	@GenerationHandler
 	def generate(self) -> Tuple[Dict, str]:
-		# TODO: Implement
-		return ({}, "Not implemented")
+		_id = input("Mod ID: ")
+		allow_prereleases = input("Allow Pre-Releases (y/n): ").lower() == "y"
+		mod_loader = input("Mod Loader (ex. 'fabric' or 'forge'): ").lower()
+
+		must_contain = []
+		while True:
+			npt = input("Words that the file must contain (one per line, enter to continue): ")
+			if npt == "":
+				break
+			must_contain.append(npt)
+
+		must_not_contain = []
+		while True:
+			npt = input("Words that the file must not contain (one per line, enter to continue): ")
+			if npt == "":
+				break
+			must_not_contain.append(npt)
+
+		return ({
+			"id": _id,
+			"allow_prereleases": allow_prereleases,
+			"mod_loader": mod_loader,
+			"must_contain": must_contain,
+			"must_not_contain": must_not_contain
+		}, "")
